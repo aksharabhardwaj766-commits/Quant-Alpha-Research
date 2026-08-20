@@ -106,3 +106,11 @@ def evaluate_alpha(signal_df, close_df, n_stocks, long_pct=0.1, short_pct=0.1):
         "ic_mean": ic_series.mean(),
         "icir": icir(ic_series),
     }
+
+def ts_rank(df, window):
+    """Rolling rank of the most recent window of the column"""
+    return df.rolling(window).apply(lambda x: pd.Series(x).rank().iloc[-1])
+
+def rolling_corr(df1, df2, window):
+    '''Rolling correlation between two dataframes, column by column'''
+    return df1.rolling(window).corr(df2)

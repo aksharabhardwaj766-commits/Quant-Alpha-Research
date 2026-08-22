@@ -43,6 +43,9 @@ def get_close_prices(data):
     """Extract just the Close price panel: dates x tickers."""
     return data.xs("Close", axis=1, level="Price")
 
+def get_open_prices(data):
+    '''Extract Open price panel: dates x tickers'''
+    return data.xs('Open', axis=1, level='Price')
 
 def get_volume(data):
     """Extract just the Volume panel: dates x tickers."""

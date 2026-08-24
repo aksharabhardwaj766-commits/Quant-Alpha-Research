@@ -114,3 +114,11 @@ def ts_rank(df, window):
 def rolling_corr(df1, df2, window):
     '''Rolling correlation between two dataframes, column by column'''
     return df1.rolling(window).corr(df2)
+
+def ts_min(series, window):
+    '''Rolling min over past window days'''
+    return series.rolling(window).min()
+
+def ts_max(series, window):
+    '''Rolling max over past window days'''
+    return series.rolling(window).max()

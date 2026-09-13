@@ -1,7 +1,5 @@
 # Quant Alpha Research
 
-101 Formulaic Alphas project (Kakushadze 2016).
-
 ## Setup
 ```
 pip install -r requirements.txt

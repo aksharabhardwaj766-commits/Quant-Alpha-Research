@@ -175,3 +175,32 @@ def linear_decay(df, window):
         result[i, :] = np.dot(weights, window_slice)/weight_sum
     return pd.DataFrame(result, index=df.index, columns=df.columns)    
 
+def get_liquidity_universe(close, volume, n_stocks, split_date=SPLIT_DATE, use_train_only=True):
+    """
+    select n_stocks smallest-cap proxy by average dollar volume.
+    point-in-time by default (train-only) to avoid lookahead bias.
+
+    usage:
+        from alpha_utils import get_liquidity_universe
+        universe = get_liquidity_universe(close, volume, n_stocks=200)
+        close_subset = close[universe]
+        volume_subset = volume[universe]
+
+    """
+    dollar_volume = close * volume
+    if use_train_only:
+        dollar_volume = dollar_volume[dollar_volume.index < split_date]
+
+    assert close.index().min() < split_date < close.index.max(), \
+        f"split_date{split_date} outside data range [{close.index.min()}, {close.index.max()}]"
+
+    n_train_days = (dollar_volume.index < split_date).sum() if use_train_only else len(dollar_volume)
+    assert n_train_days >= 60, f"Only {n_train_days} train_days - too few for reliable averages"
+
+    avg_dollar_volume = dollar_volume.mean()
+    return avg_dollar_volume.nsmallest(n_stocks).index
+
+
+
+
+

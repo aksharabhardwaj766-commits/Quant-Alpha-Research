@@ -43,6 +43,8 @@ def rank_to_position(rank_df, n_stocks=None, long_pct=0.1, short_pct=0.1):
 def signal_to_position(signal_df, long_pct=0.1, short_pct=0.1):
     '''signal strength weighted positions, within the long/short bucket - stronger signal = bigger position
     positions are dollar-neutral (longs sum to +1, shorts sum to -1)'''
+    
+    signal_df = signal_df.sub(signal_df.mean(axis=0), axis=1)
     rank_df = signal_df.rank(axis=1, pct=True) # percentile rank, 0 to 1, per day
     long_mask = rank_df > (1 - long_pct)
     short_mask = rank_df <= short_pct
@@ -175,7 +177,7 @@ def linear_decay(df, window):
         result[i, :] = np.dot(weights, window_slice)/weight_sum
     return pd.DataFrame(result, index=df.index, columns=df.columns)    
 
-def get_liquidity_universe(close, volume, n_stocks, split_date=SPLIT_DATE, use_train_only=True):
+def get_liquidity_universe(close, volume, n_stocks, split_date=SPLIT_DATE, use_train_only=True, direction='smallest'):
     """
     select n_stocks smallest-cap proxy by average dollar volume.
     point-in-time by default (train-only) to avoid lookahead bias.
@@ -191,16 +193,50 @@ def get_liquidity_universe(close, volume, n_stocks, split_date=SPLIT_DATE, use_t
     if use_train_only:
         dollar_volume = dollar_volume[dollar_volume.index < split_date]
 
-    assert close.index().min() < split_date < close.index.max(), \
+    assert close.index.min() < split_date < close.index.max(), \
         f"split_date{split_date} outside data range [{close.index.min()}, {close.index.max()}]"
 
     n_train_days = (dollar_volume.index < split_date).sum() if use_train_only else len(dollar_volume)
     assert n_train_days >= 60, f"Only {n_train_days} train_days - too few for reliable averages"
 
     avg_dollar_volume = dollar_volume.mean()
-    return avg_dollar_volume.nsmallest(n_stocks).index
+    if direction == 'smallest':
+        return avg_dollar_volume.nsmallest(n_stocks).index
+    elif direction == 'largest':
+        return avg_dollar_volume.nlargest(n_stocks).index
+    else:
+        raise ValueError('direction must be smallest or largest')
 
+def plot_alpha(results, split_date, alpha_name, save_path=None, rolling_window=60):
+    """
+    Standard 2-panel plot for alpha evaluation : equity curve + rolling IC.
+    """
+    import matplotlib.pyplot as plt
 
+    strat_returns = results['strategy_returns']
+    ic_series = results['ic_series']
+    train_sharpe = results['train_sharpe']
+    test_sharpe = results['test_sharpe']
 
+    cum_returns = (1 + strat_returns).cumprod()
+    rolling_ic = ic_series.rolling(rolling_window).mean()
+
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+
+    axes[0].plot(cum_returns[cum_returns.index < split_date],label='Train', color='Blue')
+    axes[0].plot(cum_returns[cum_returns.index >= split_date],label='Test', color='Orange')
+    axes[0].axvline(split_date, color='grey', linestyle='--', label='Train/Test Split')
+    axes[0].set_title(f'{alpha_name}: Cumulative Returns (Train Sharpe {train_sharpe:.2f}, Test Sharpe {test_sharpe:.2f})')
+    axes[0].legend()
+
+    axes[1].plot(rolling_ic, color='green')
+    axes[1].axhline(0, color='black', linewidth=0.8)
+    axes[1].axvline(split_date, color='grey', linestyle='--')
+    axes[1].set_title(f'{rolling_window}-Day Rolling IC')
+
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=150)
+    plt.show() 
 
 

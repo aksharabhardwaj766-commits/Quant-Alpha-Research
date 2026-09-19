@@ -11,7 +11,7 @@ pip install -r requiremnts.txt
 
 ## Simulated Alphas
 
-1. 12-1 Month Momentum (Jagdeesh-Titman): classic cross-sectional momentum ✅
+### 12-1 Month Momentum (Jagdeesh-Titman): classic  cross-sectional momentum ✅
 
 Signal : 11 month returns (252-day lookback), skipping the most recent month (21-days to avoid short-term reversal contamination)
 
@@ -23,7 +23,7 @@ Train : Sharpe = 0.9735 | IC Mean = 0.0248
 
 Test OOS : Sharpe = 0.8041 | IC mean = 0.0267
 
-2. Short Term Reversal, 1 week/1 month (Jagdeesh-Titman): Opposite sign of reversal ✅
+### Short Term Reversal, 1 week/1 month (Jagdeesh-Titman): Opposite sign of reversal ✅
 
 Signal : Past returns over short window (ex: 5 trade days, 21 trade days)
 

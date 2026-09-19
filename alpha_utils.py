@@ -163,6 +163,10 @@ def ts_max(series, window):
     '''Rolling max over past window days'''
     return series.rolling(window).max()
 
+def ts_std(df, window):
+    '''Rolling std_dev over past window days. Used for realised volume signal  '''
+    return df.rolling(window).std()
+
 def linear_decay(df, window):
     '''Vectorised linear decay weighted moving average, most recent days get high weight '''
     weights = np.arange(1, window+1)
@@ -239,4 +243,21 @@ def plot_alpha(results, split_date, alpha_name, save_path=None, rolling_window=6
         plt.savefig(save_path, dpi=150)
     plt.show() 
 
+def ts_idio_vol(returns, market_returns, window):
+    market_var = market_returns.rolling(window).var()
 
+    cov_w_market = returns.rolling(window).apply(lambda x: np.nan)
+    cov_w_market = pd.DataFrame({col: returns[col].rolling(window).cov(market_returns) for col in returns.columns}, index=returns.index)
+
+    beta = cov_w_market.div(market_var, axis=0)
+
+    stock_var = returns.rolling(window).var()
+
+    idio_var = stock_var.sub(beta.pow(2).mul(market_var, axis=0))
+    idio_var = idio_var.clip(lower=0)
+
+    idio_vol = np.sqrt(idio_var)
+    return idio_vol
+
+def compute_market_ret(returns):
+    return returns.mean(axis=1)
